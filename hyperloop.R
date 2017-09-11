@@ -16,7 +16,7 @@ hyperloop <- function(vcf, format, pos_format, gt_field, pos_gt_field, suffix)
   {
     bdy <- subset(vcf,vcf[[format]]==uniq[i])
     col_begin <- ncol(bdy)
-    attach(bdy)
+    attach(bdy, warn.conflicts = F)
     into = c(strsplit(uniq[i],":")[[1]]) #check VCF first, this can differ
     into <- paste(into,suffix,sep="_")
     ad1 <- paste(c("AD1","AD2"),suffix,sep="_")
@@ -27,12 +27,19 @@ hyperloop <- function(vcf, format, pos_format, gt_field, pos_gt_field, suffix)
     col_end <- ncol(bdy)
     new_cols <- col_end - col_begin
     additional_gt <- col_begin - pos_gt_field
-    orderx <- c(1:pos_gt_field,((col_end-additional_gt)+1):col_end,(pos_gt_field+1):(col_end-additional_gt))
-    bdy <- bdy[,orderx]
+    if(pos_gt_field != col_begin)
+    {
+      orderx <- c(1:pos_gt_field,((col_end-additional_gt)+1):col_end,(pos_gt_field+1):(col_end-additional_gt))
+      bdy <- bdy[,orderx]
+    }
+    if(pos_gt_field == col_begin)
+    {
+      bdy <- bdy
+    }
     names(bdy)
     assign(paste("gt_array",i,sep=""),bdy)
   }
-
+  
   xlen = length(ls(pattern="^gt_array"))
   
   #
@@ -48,23 +55,23 @@ hyperloop <- function(vcf, format, pos_format, gt_field, pos_gt_field, suffix)
   for(i in 1:xlen)
   {
     dff <- get(ls(pattern="^gt_array")[i])
-
+    
     dff1 <- dff[,1:col_begin]
-  
+    
     dff2 <- dff[,orderx]
-   
+    
     dffx <- cbind(dff1,dff2) # this creates a dataframe in the same order for every column
-   
+    
     df_final <- rbind(df_final,dffx)
- 
+    
   }
   
   df_final <- df_final[order( df_final$Chr, df_final$Start ),]
   rownames(df_final) <- NULL
   end_time <- Sys.time()
   print(end_time - start_time)
-
+  
   return(df_final)
-
+  
 }
 ```
